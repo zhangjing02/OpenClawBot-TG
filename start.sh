@@ -13,4 +13,6 @@ echo "Starting OpenClaw Gateway on port 7860..."
 export PORT=7860
 
 # 启动 OpenClaw
-npm run start
+# 自动回答交互式向导 (网关、工作区、技能设置)
+# 根据 OpenClaw 的向导逻辑，通常需要几个回车或默认选择
+printf "\n\n\n\n\n\n" | npm run start -- --port $PORT
