@@ -1,24 +1,23 @@
 #!/bin/bash
 set -e
 
-# 设置配置存储路径
+# 设置配置存储路径 (OpenClaw 2026.3 默认位置)
 CONF_DIR="/root/.openclaw"
 mkdir -p "$CONF_DIR"
 mkdir -p "/app/storage/workspace"
 
-echo "Applying final network configuration..."
+echo "Finalizing OpenClaw 2026.3 configuration..."
 
-# 获取 Token
+# 获取 Token (支持手动输入或环境变量)
 TOKEN="${TG_TOKEN:-8706533687:AAHQIxNouxWxn2HM2Ita2w7B8_CkKda4nio}"
 
-# 生成配置文件，同时尝试多种可能的监听配置键
+# 生成严格符合 2026.3.2 规范的配置文件
+# 注意：新版本使用 botToken 且去除了过时的 gateway 网络配置项
 cat > "$CONF_DIR/openclaw.json" <<EOF
 {
   "gateway": {
     "mode": "local",
-    "port": 7860,
-    "host": "0.0.0.0",
-    "listen": "0.0.0.0:7860"
+    "port": 7860
   },
   "agents": {
     "defaults": {
@@ -28,26 +27,19 @@ cat > "$CONF_DIR/openclaw.json" <<EOF
   "channels": {
     "telegram": {
       "enabled": true,
-      "token": "$TOKEN"
-    }
-  },
-  "providers": {
-    "zero": {
-      "enabled": true,
-      "browser": "playwright",
-      "headless": true
+      "botToken": "$TOKEN"
     }
   }
 }
 EOF
 
-# 设置环境变量 (HF Space 识别 PORT 环境变量)
+# 通过环境变量注入，这是最可靠的备选方案
 export PORT=7860
-export HOST="0.0.0.0"
-export OPENCLAW_LISTEN="0.0.0.0:7860"
-export OPENCLAW_PORT=7860
+export TELEGRAM_BOT_TOKEN="$TOKEN"
+export OPENCLAW_TELEGRAM_BOT_TOKEN="$TOKEN"
 
-echo "Starting OpenClaw Gateway on 0.0.0.0:7860..."
+echo "Starting Gateway..."
 
-# 启动命令：增加 --listen 和 --port 参数强制覆盖
-printf "\n\n\n\n\n\n" | node scripts/run-node.mjs gateway --port 7860 --listen 0.0.0.0:7860 --allow-unconfigured
+# 启动命令：移除不再支持的 --listen 参数，使用官方推荐的 --allow-unconfigured
+# 配合 printf 以防万一仍有向导弹出
+printf "\n\n\n\n\n\n" | node scripts/run-node.mjs gateway --port 7860 --allow-unconfigured
