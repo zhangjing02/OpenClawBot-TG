@@ -9,10 +9,14 @@ RUN apt-get update && apt-get install -y \
     curl \
     git \
     unzip \
-    && rm -rf /var/lib/apt/lists/*
+    && curl -fsSL https://deb.nodesource.com/setup_22.x | bash - && \
+    apt-get install -y nodejs && \
+    npm install -g pnpm && \
+    curl -fsSL https://bun.sh/install | bash && \
+    ln -s $HOME/.bun/bin/bun /usr/local/bin/bun && \
+    rm -rf /var/lib/apt/lists/*
 
 # 安装 Bun (OpenClaw 构建所需)
-RUN curl -fsSL https://bun.sh/install | bash
 ENV PATH="/root/.bun/bin:$PATH"
 
 # 安装 Playwright 浏览器依赖 (用于 Zero Token 模式模拟网页登录)
