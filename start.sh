@@ -14,11 +14,10 @@ TOKEN="${TG_TOKEN:-8706533687:AAHQIxNouxWxn2HM2Ita2w7B8_CkKda4nio}"
 # 配置 Telegram API 反向代理地址 (高可靠节点)
 TG_PROXY_DOMAIN="tgproxy.liblaf.top/bot"
 
-# 【黑科技】源码打桩：在启动前替换所有硬编码的官方域名
-# 这样即便配置参数无效，底层通信也会强制流向代理
-echo "Patching source files to use $TG_PROXY_DOMAIN..."
-find /app/node_modules -type f -name "*.js" -exec sed -i "s/api.telegram.org/$TG_PROXY_DOMAIN/g" {} + || true
-find /app/dist -type f -name "*.js" -exec sed -i "s/api.telegram.org/$TG_PROXY_DOMAIN/g" {} + || true
+# 【黑科技】源码补丁：在启动前替换所有硬编码的官方域名
+# 使用 grep 预筛选，极大提升启动速度；改用 | 作为 sed 分隔符以支持包含 / 的代理地址
+echo "Scanning and patching source files for Telegram API..."
+grep -rl "api.telegram.org" /app/dist /app/node_modules --include="*.js" 2>/dev/null | xargs -r sed -i "s|api.telegram.org|$TG_PROXY_DOMAIN|g" || true
 
 # 生成极简配置文件
 cat > "$CONF_DIR/openclaw.json" <<EOF
@@ -52,5 +51,5 @@ export NODE_TLS_REJECT_UNAUTHORIZED=0
 echo "Starting Gateway via daemon-cli..."
 
 # 启动命令：使用 subagent 验证成功的确切路径
-# 注意：2026.3 版本的入口点可能是 dist/daemon-cli.js
-node dist/daemon-cli.js gateway --port 7860 --bind 0.0.0.0 --allow-unconfigured
+# 加上 exec 确保进程接管 PID 1，以便接收 HF 的停止信号并防止提前退出
+exec node dist/daemon-cli.js gateway --port 7860 --bind 0.0.0.0 --allow-unconfigured
