@@ -52,13 +52,16 @@ export OPENCLAW_TELEGRAM_BOT_TOKEN="$TOKEN"
 export TELEGRAM_BOT_TOKEN="$TOKEN"
 export NODE_TLS_REJECT_UNAUTHORIZED=0
 
-echo "Starting Gateway via daemon-cli..."
-
 # 启动命令：后台运行网关，然后使用 tail -f 维持容器运行并实时输出日志
-# 这样能满足 HF 的健康检查，同时方便我们调试
+echo "Starting Gateway via daemon-cli..."
+# 确保日志目录存在，并创建一个初始文件防止 tail 崩溃
+mkdir -p "$CONF_DIR/logs"
+touch "$CONF_DIR/logs/system.log"
+
 node dist/daemon-cli.js gateway --port 7860 --bind 0.0.0.0 --allow-unconfigured &
 
-# 等待应用初始化日志文件
+# 等待应用初始化
 sleep 5
 echo "Streaming logs to keep container alive..."
-exec tail -f /root/.openclaw/logs/*.log 2>/dev/null || sleep infinity
+# 加上 -F (Retry) 确保如果文件还没生成也会等待
+exec tail -F "$CONF_DIR/logs/"*.log 2>/dev/null || sleep infinity
